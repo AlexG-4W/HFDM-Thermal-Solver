@@ -33,10 +33,6 @@ $$\rho c_p \frac{\partial u}{\partial t} = \nabla \cdot (K(x,y) \nabla u) + Q(x,
 * Python 3.9+
 * Required libraries: `numpy`, `matplotlib`, `PyQt6`, `pcb-tools`, `pycairo`
 
- Clone the repository
-git clone [https://github.com/yourusername/hfdm-thermal-solver.git](https://github.com/yourusername/hfdm-thermal-solver.git)
-cd hfdm-thermal-solver
-
 # Install dependencies
 pip install -r requirements.txt
 
@@ -62,4 +58,9 @@ config.py: Thermodynamic constants and solver parameters.
 
 👨‍💻 About The Author
 Developed as an R&D project to bridge the gap between hardware engineering, thermodynamic physics, and high-performance computational Python.
+
+## License
+
+Distributed under the MIT License.
+
 
