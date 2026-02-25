@@ -1,0 +1,4 @@
+Designator,Center_X_mm,Center_Y_mm,Width_mm,Height_mm,Power_Watts
+U1,50,50,14,14,3.0
+Q1,20,80,10,15,5.5
+U2,80,20,5,5,1.2

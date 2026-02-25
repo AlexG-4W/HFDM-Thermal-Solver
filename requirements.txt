@@ -1,0 +1,7 @@
+numpy>=1.20.0
+matplotlib>=3.3.0
+PyQt6>=6.0.0
+pcb-tools>=0.1.6
+pycairo>=1.20.0
+Pillow>=9.0.0
+pytest>=7.0.0
