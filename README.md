@@ -1,55 +1,66 @@
-# HFDM Thermal Solver
+# HFDM Thermal Solver (Heterogeneous Finite Difference Method)
 
-A high-performance 2D Finite Difference Method (FDM) Thermal Solver designed to simulate transient and steady-state temperature distributions on Printed Circuit Boards (PCBs). 
+<img width="1781" height="1233" alt="image" src="https://github.com/user-attachments/assets/49589ced-e1c6-43e8-af23-ae64d79ea5f4" />
+<img width="1784" height="1251" alt="image" src="https://github.com/user-attachments/assets/f14aca52-9951-498f-9cfb-5f6b4bbf69a7" />
 
-The tool accounts for volumetric heat generation from SMT components, surface convective cooling from top and bottom faces, and lateral heat spreading through internal copper planes. It features a responsive PyQt6 desktop GUI, real-time interactive component editing, and native Gerber (RS-274X) file parsing for accurate physical modeling of copper topology.
 
-## Features
 
-- **Physics-Based Thermal Modeling**: Solves the 2D Heat Equation with a spatially variable thermal conductivity matrix $K(x,y)$.
-- **Gerber Parsing Integration**: Load top copper (`.gbr`/`.gtl`) files to rasterize and map true trace geometries directly onto the conductivity matrix.
-- **Interactive PyQt6 GUI**: A professional, multithreaded desktop application that stays responsive during intensive computations.
-- **Multilayer Support**: Automatically calculates the effective thermal conductivity ($k_{eff}$) of 2-layer and 4-layer boards when specific trace data is unavailable.
-- **Transient & Steady-State Modes**: Simulate temperature evolution over time or jump straight to the thermal equilibrium.
-- **Interactive Component Table**: Edit component power dissipation, dimensions, and locations on the fly. 
+A high-performance, 2D Finite Difference Method (FDM) thermal solver designed specifically for Printed Circuit Boards (PCBs). This tool simulates both **transient** (dynamic heating/cooling) and **steady-state** thermal distribution across heterogeneous materials, allowing engineers to identify thermal bottlenecks and optimize component placement and copper pours.
 
-## Installation
+![HFDM Thermal Solver GUI](docs/screenshot_gui.png) *(Note: Create a `docs` folder and place your best GUI screenshot here)*
 
-Ensure you have Python 3.8+ installed. Install the dependencies via `pip`:
+## 🚀 Key Features
+
+* **Heterogeneous Material Support:** Calculates heat transfer across boundaries with vastly different thermal conductivities (e.g., FR-4 insulator vs. Copper traces).
+* **Real PCB Topology Parsing:** Integrates `pcb-tools` to parse production Gerber RS-274X files (`.gtl`/`.gbr`), automatically mapping copper polygons into a spatial thermal conductivity matrix $K(x,y)$.
+* **Dual Solving Engines:**
+    * *Transient Solver:* Simulates real-time heat propagation using an explicit Euler scheme strictly optimized via NumPy vectorization. Supports dynamic power profiles (e.g., PWM or component shutdown).
+    * *Steady-State Solver:* Instantly calculates thermal equilibrium ($t \to \infty$) using the Jacobi iteration method.
+* **Virtual Thermal Probes:** Places virtual thermocouples on critical components to log and plot temperature evolution over time (heating/cooling curves).
+* **GUI & Multithreading:** Built with `PyQt6` and embedded `matplotlib`. CPU-bound mathematical operations are offloaded to background threads to maintain a responsive interface.
+
+## 🧮 Mathematical Foundation
+
+The core engine numerically solves the divergent form of the 2D Heat Equation to accurately model heat flux across heterogeneous materials (copper vs. substrate):
+
+$$\rho c_p \frac{\partial u}{\partial t} = \nabla \cdot (K(x,y) \nabla u) + Q(x,y) - \frac{2h(u - T_{amb})}{d}$$
+
+* **Convective Boundary Conditions:** Implemented using the "Ghost Node" (fictitious node) method to enforce Newton's Law of Cooling at the PCB edges, maintaining $O(\Delta x^2)$ spatial accuracy without slow `for` loops.
+* **Numerical Stability:** The explicit transient solver strictly adheres to the 2D Courant–Friedrichs–Lewy (CFL) stability condition: $dt \le \frac{dx^2}{4\alpha}$.
+
+## 🛠️ Installation & Usage
+
+### Prerequisites
+* Python 3.9+
+* Required libraries: `numpy`, `matplotlib`, `PyQt6`, `pcb-tools`, `pycairo`
 
 ```bash
+# Clone the repository
+git clone [https://github.com/yourusername/hfdm-thermal-solver.git](https://github.com/yourusername/hfdm-thermal-solver.git)
+cd hfdm-thermal-solver
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-*Note on Windows*: The `pycairo` library is required for rendering Gerber files.
-
-## Usage
-
-Launch the solver directly via Python:
-
-```bash
+# Run the application
 python main.py
-```
+Quick Start
+Load Components: Edit or load a CSV file containing SMT component coordinates and power dissipation (Watts).
 
-Alternatively, a standalone executable (`HFDM_Solver.exe`) is provided for Windows users, requiring no Python environment to run.
+Load Topology (Optional): Click "Load Top Copper (Gerber)" to import a real .gtl file for accurate thermal spreading.
 
-### GUI Workflow
-1. **Load Data**: Start by loading a component definition CSV or manually adding components in the 'Components' tab.
-2. **Load Top Copper (Optional)**: Click "Load Top Copper (Gerber)" to parse a physical PCB layout. Click "View Topology" to inspect the generated conductivity map.
-3. **Configure Parameters**: Set the Ambient Temperature ($T_{amb}$) and the total time for transient simulations ($t_{final}$).
-4. **Execute**: Run either the "Steady-State" or "Transient" simulation.
-5. **Analyze**: View the live-updating heatmap indicating the temperature distribution across the board.
+Run Simulation: Select either Steady-State for instant equilibrium results or Transient to watch the thermal wave propagate.
 
-## File Structure
+📂 Project Architecture
+solver.py: The high-performance mathematical engine (Transient & Jacobi solvers, Matrix operations).
 
-- `main.py`: Entry point for the application.
-- `gui.py`: Main desktop application logic built with PyQt6.
-- `solver.py`: Core computational FDM engine (Transient & Steady-State).
-- `data_loader.py`: Handles CSV parsing and Gerber rasterization to build heat source ($Q$) and conductivity ($K$) matrices.
-- `visualization.py`: Matplotlib plotting logic for heatmaps.
-- `config.py`: Physical constants, stackup definitions, and global simulation parameters.
-- `tests/`: Unit tests and physical validation scripts.
+data_loader.py: Handles CSV parsing and Gerber RS-274X rasterization into physical index maps.
 
-## License
+gui.py: PyQt6 application interface and multithreading architecture.
 
-Distributed under the MIT License.
+visualization.py: Matplotlib canvas rendering and virtual probe plotting.
+
+config.py: Thermodynamic constants and solver parameters.
+
+👨‍💻 About The Author
+Developed as an R&D project to bridge the gap between hardware engineering, thermodynamic physics, and high-performance computational Python.
