@@ -34,7 +34,6 @@ $$\rho c_p \frac{\partial u}{\partial t} = \nabla \cdot (K(x,y) \nabla u) + Q(x,
 * Python 3.9+
 * Required libraries: `numpy`, `matplotlib`, `PyQt6`, `pcb-tools`, `pycairo`
 
-```bash
  Clone the repository
 git clone [https://github.com/yourusername/hfdm-thermal-solver.git](https://github.com/yourusername/hfdm-thermal-solver.git)
 cd hfdm-thermal-solver
