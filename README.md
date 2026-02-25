@@ -57,6 +57,7 @@ Load Topology (Optional): Click "Load Top Copper (Gerber)" to import a real .gtl
 Run Simulation: Select either Steady-State for instant equilibrium results or Transient to watch the thermal wave propagate.
 
 📂 Project Architecture
+
 solver.py: The high-performance mathematical engine (Transient & Jacobi solvers, Matrix operations).
 
 data_loader.py: Handles CSV parsing and Gerber RS-274X rasterization into physical index maps.
@@ -68,11 +69,13 @@ visualization.py: Matplotlib canvas rendering and virtual probe plotting.
 config.py: Thermodynamic constants and solver parameters.
 
 👨‍💻 About The Author
+
 Developed as an R&D project to bridge the gap between hardware engineering, thermodynamic physics, and high-performance computational Python.
 
 ## License
 
 Distributed under the MIT License.
+
 
 
 
