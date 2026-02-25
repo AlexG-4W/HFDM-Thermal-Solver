@@ -36,6 +36,17 @@ $$\rho c_p \frac{\partial u}{\partial t} = \nabla \cdot (K(x,y) \nabla u) + Q(x,
 # Install dependencies
 pip install -r requirements.txt
 
+## Usage
+
+Launch the solver directly via Python:
+
+```bash
+python main.py
+```
+
+Alternatively, a standalone executable (`HFDM_Solver.exe`) is provided for Windows users, requiring no Python environment to run.
+
+
 # Run the application
 python main.py
 Quick Start
@@ -62,5 +73,6 @@ Developed as an R&D project to bridge the gap between hardware engineering, ther
 ## License
 
 Distributed under the MIT License.
+
 
 
