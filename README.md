@@ -7,7 +7,6 @@
 
 A high-performance, 2D Finite Difference Method (FDM) thermal solver designed specifically for Printed Circuit Boards (PCBs). This tool simulates both **transient** (dynamic heating/cooling) and **steady-state** thermal distribution across heterogeneous materials, allowing engineers to identify thermal bottlenecks and optimize component placement and copper pours.
 
-![HFDM Thermal Solver GUI](docs/screenshot_gui.png) *(Note: Create a `docs` folder and place your best GUI screenshot here)*
 
 ## 🚀 Key Features
 
@@ -63,3 +62,4 @@ config.py: Thermodynamic constants and solver parameters.
 
 👨‍💻 About The Author
 Developed as an R&D project to bridge the gap between hardware engineering, thermodynamic physics, and high-performance computational Python.
+
