@@ -74,7 +74,7 @@ Developed as an R&D project to bridge the gap between hardware engineering, ther
 
 ## License
 
-Distributed under the MIT License.
+Distributed under the GNU General Public License v3.0 
 
 
 
