@@ -1,7 +1,6 @@
 # HFDM Thermal Solver v1.1
 
 ![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-Stable-brightgreen.svg)
 
 **HFDM (Heterogeneous Finite Difference Method) Thermal Solver** is a high-performance 2D computational heat transfer simulation tool specifically designed for Printed Circuit Boards (PCBs). 
@@ -19,6 +18,15 @@ Unlike standard FDM solvers that assume uniform material properties, HFDM v1.1 p
 * **Multithreaded PyQt6 GUI:** A robust desktop interface that isolates the intensive FDM calculations into background QRunnable threads, preventing UI freezing while utilizing pyqtSignal for safe memory management and Matplotlib rendering.
 
 ---
+
+
+<img width="2545" height="1376" alt="scr1" src="https://github.com/user-attachments/assets/7e7fe15d-90be-4f16-97f5-fe19bc6feccc" />
+
+<img width="2559" height="1394" alt="scr2" src="https://github.com/user-attachments/assets/cc3e082d-5ec8-4afd-a6a6-91592efae555" />
+
+
+
+
 
 ## Mathematical Foundation
 
