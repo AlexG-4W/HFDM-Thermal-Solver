@@ -261,9 +261,14 @@ class MainWindow(QMainWindow):
         self.logger.info(message)
 
     def load_data(self):
-        # In a real app, we'd use a file dialog. For now, we use the default loader logic.
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open CSV", "", "CSV Files (*.csv);;All Files (*)"
+        )
+        if not path:
+            return
+
         try:
-            self.components_list = load_components_list()
+            self.components_list = load_components_list(path)
             # Ensure nx, ny are fresh based on current config
             self.nx = int(100.0 / (config.dx * 1000))
             self.ny = int(100.0 / (config.dx * 1000))
@@ -362,8 +367,11 @@ class MainWindow(QMainWindow):
         row = self.table.rowCount()
         self.table.insertRow(row)
         self.table.setItem(row, 0, QTableWidgetItem(f"NEW{row}"))
-        for j in range(1, 6):
-            self.table.setItem(row, j, QTableWidgetItem("0.0"))
+        self.table.setItem(row, 1, QTableWidgetItem("0.0"))   # Power
+        self.table.setItem(row, 2, QTableWidgetItem("50.0"))  # X
+        self.table.setItem(row, 3, QTableWidgetItem("50.0"))  # Y
+        self.table.setItem(row, 4, QTableWidgetItem("10.0"))  # Width
+        self.table.setItem(row, 5, QTableWidgetItem("10.0"))  # Height
         self.on_table_edit()
 
     def delete_component_row(self):
