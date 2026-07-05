@@ -14,12 +14,14 @@ def load_components_list(filename="components_power.csv"):
     with open(filename, mode='r') as file:
         reader = csv.DictReader(file)
         for row in reader:
+            # Fallback: accept both 'Length_mm' (v1.1+) and legacy 'Height_mm'
+            length = float(row.get('Length_mm') or row.get('Height_mm', 0))
             components.append({
                 'Designator': row['Designator'],
                 'Center_X_mm': float(row['Center_X_mm']),
                 'Center_Y_mm': float(row['Center_Y_mm']),
                 'Width_mm': float(row['Width_mm']),
-                'Height_mm': float(row['Height_mm']),
+                'Length_mm': length,
                 'Power_Watts': float(row['Power_Watts'])
             })
     return components
@@ -36,18 +38,18 @@ def calculate_q_matrix(components, nx, ny):
     Q_matrix = np.zeros((ny, nx))
     for comp in components:
         cx, cy = comp['Center_X_mm'], comp['Center_Y_mm']
-        w, h_mm = comp['Width_mm'], comp['Height_mm']
+        w, l_mm = comp['Width_mm'], comp['Length_mm']
         p = comp['Power_Watts']
 
         # Guard: skip components with zero/negative footprint (e.g. freshly
         # added empty rows in the GUI) to avoid ZeroDivisionError.
-        footprint_area_m2 = (w / 1000.0) * (h_mm / 1000.0)
+        footprint_area_m2 = (w / 1000.0) * (l_mm / 1000.0)
         pcb_shell_volume = footprint_area_m2 * config.d
         if pcb_shell_volume <= 0:
             continue
 
         idx_x_start, idx_x_end, idx_y_start, idx_y_end = get_indices(
-            cx, cy, w, h_mm, nx, ny
+            cx, cy, w, l_mm, nx, ny
         )
 
         # q_volumetric = P / (A_footprint * d_pcb)  [W/m^3]
@@ -75,13 +77,14 @@ def load_components_dict(filename="components_power.csv", board_width_mm=100.0, 
         for row in reader:
             designator = row['Designator']
             cx, cy = float(row['Center_X_mm']), float(row['Center_Y_mm'])
-            w, h_mm = float(row['Width_mm']), float(row['Height_mm'])
+            length = float(row.get('Length_mm') or row.get('Height_mm', 0))
+            w, l_mm = float(row['Width_mm']), length
             p = float(row['Power_Watts'])
             
-            idx_x_start, idx_x_end, idx_y_start, idx_y_end = get_indices(cx, cy, w, h_mm, nx, ny)
+            idx_x_start, idx_x_end, idx_y_start, idx_y_end = get_indices(cx, cy, w, l_mm, nx, ny)
             
             # Volumetric heat source calculation
-            volume = (w / 1000.0) * (h_mm / 1000.0) * config.d
+            volume = (w / 1000.0) * (l_mm / 1000.0) * config.d
             q_volumetric = p / volume
             
             comp_matrix = np.zeros((ny, nx))
@@ -111,10 +114,11 @@ def load_heatsinks(filename="heatsinks.csv", nx=200, ny=200):
         reader = csv.DictReader(file)
         for row in reader:
             cx, cy = float(row['Center_X_mm']), float(row['Center_Y_mm'])
-            w, h_mm = float(row['Width_mm']), float(row['Height_mm'])
+            length = float(row.get('Length_mm') or row.get('Height_mm', 0))
+            w, l_mm = float(row['Width_mm']), length
             h_val = float(row['Convection_H'])
             
-            idx_x_start, idx_x_end, idx_y_start, idx_y_end = get_indices(cx, cy, w, h_mm, nx, ny)
+            idx_x_start, idx_x_end, idx_y_start, idx_y_end = get_indices(cx, cy, w, l_mm, nx, ny)
             
             # Update h_matrix (use max to allow overlapping HS zones with highest H)
             h_matrix[idx_y_start:idx_y_end, idx_x_start:idx_x_end] = np.maximum(

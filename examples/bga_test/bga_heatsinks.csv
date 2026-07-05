@@ -1,3 +1,3 @@
-Designator,Center_X_mm,Center_Y_mm,Width_mm,Height_mm,Convection_H
+Designator,Center_X_mm,Center_Y_mm,Width_mm,Length_mm,Convection_H
 HS1_BGA,50.0,50.0,40.0,40.0,120.0
 HS2_VREG,15.0,50.0,10.0,10.0,80.0

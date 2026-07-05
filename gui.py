@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
         
         self.table = QTableWidget()
         self.table.setColumnCount(6)
-        self.table.setHorizontalHeaderLabels(["Designator", "Power [W]", "X [mm]", "Y [mm]", "W [mm]", "H [mm]"])
+        self.table.setHorizontalHeaderLabels(["Designator", "Power [W]", "X [mm]", "Y [mm]", "W [mm]", "L [mm]"])
         self.table.cellChanged.connect(self.on_table_edit)
         comp_layout.addWidget(self.table)
 
@@ -327,7 +327,7 @@ class MainWindow(QMainWindow):
             self.table.setItem(i, 2, QTableWidgetItem(str(comp['Center_X_mm'])))
             self.table.setItem(i, 3, QTableWidgetItem(str(comp['Center_Y_mm'])))
             self.table.setItem(i, 4, QTableWidgetItem(str(comp['Width_mm'])))
-            self.table.setItem(i, 5, QTableWidgetItem(str(comp['Height_mm'])))
+            self.table.setItem(i, 5, QTableWidgetItem(str(comp['Length_mm'])))
         self.table.blockSignals(False)
 
     def on_table_edit(self):
@@ -357,7 +357,7 @@ class MainWindow(QMainWindow):
                     'Center_X_mm': float(self.table.item(i, 2).text()) if self.table.item(i, 2) else 0.0,
                     'Center_Y_mm': float(self.table.item(i, 3).text()) if self.table.item(i, 3) else 0.0,
                     'Width_mm': float(self.table.item(i, 4).text()) if self.table.item(i, 4) else 1.0,
-                    'Height_mm': float(self.table.item(i, 5).text()) if self.table.item(i, 5) else 1.0
+                    'Length_mm': float(self.table.item(i, 5).text()) if self.table.item(i, 5) else 1.0
                 }
                 self.components_list.append(comp)
             except (ValueError, AttributeError):
@@ -371,7 +371,7 @@ class MainWindow(QMainWindow):
         self.table.setItem(row, 2, QTableWidgetItem("50.0"))  # X
         self.table.setItem(row, 3, QTableWidgetItem("50.0"))  # Y
         self.table.setItem(row, 4, QTableWidgetItem("10.0"))  # Width
-        self.table.setItem(row, 5, QTableWidgetItem("10.0"))  # Height
+        self.table.setItem(row, 5, QTableWidgetItem("10.0"))  # Length
         self.on_table_edit()
 
     def delete_component_row(self):
@@ -386,7 +386,7 @@ class MainWindow(QMainWindow):
         if path:
             self.sync_data_from_table()
             with open(path, mode='w', newline='') as file:
-                writer = csv.DictWriter(file, fieldnames=["Designator", "Center_X_mm", "Center_Y_mm", "Width_mm", "Height_mm", "Power_Watts"])
+                writer = csv.DictWriter(file, fieldnames=["Designator", "Center_X_mm", "Center_Y_mm", "Width_mm", "Length_mm", "Power_Watts"])
                 writer.writeheader()
                 for comp in self.components_list:
                     writer.writerow(comp)
