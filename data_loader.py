@@ -2,6 +2,9 @@ import csv
 import numpy as np
 import os
 import config
+import io
+from PIL import Image
+from pygerber.gerberx3.api import Rasterized2DLayer, Rasterized2DLayerParams, ColorScheme
 
 def load_components_list(filename="components_power.csv"):
     """
@@ -22,7 +25,7 @@ def load_components_list(filename="components_power.csv"):
                 'Center_Y_mm': float(row['Center_Y_mm']),
                 'Width_mm': float(row['Width_mm']),
                 'Length_mm': length,
-                'Power_Watts': float(row['Power_Watts'])
+                'Power_Watts': float(row.get('Power_Watts', 0.0))
             })
     return components
 
@@ -116,7 +119,7 @@ def load_heatsinks(filename="heatsinks.csv", nx=200, ny=200):
             cx, cy = float(row['Center_X_mm']), float(row['Center_Y_mm'])
             length = float(row.get('Length_mm') or row.get('Height_mm', 0))
             w, l_mm = float(row['Width_mm']), length
-            h_val = float(row['Convection_H'])
+            h_val = float(row.get('Convection_H', config.h))
             
             idx_x_start, idx_x_end, idx_y_start, idx_y_end = get_indices(cx, cy, w, l_mm, nx, ny)
             
@@ -220,78 +223,38 @@ def generate_k_matrix(width_mm, height_mm, dx_m, k_fr4=None, k_copper=385.0):
 
     return K_matrix
 
-def load_gerber_to_k_matrix(gerber_path, width_mm, height_mm, dx_m,
-                             k_fr4=None, k_copper=385.0):
-    """
-    Parses a Gerber file and rasterizes it into a thermal conductivity 
-    matrix K(x,y) using a through-thickness mixing model.
+def load_gerber_to_k_matrix(gerber_path, nx, ny, dx_m, dy_m):
+    # Рендерим Gerber файл в память через PyGerber
+    img_io = io.BytesIO()
     
-    FIX V-2: Cells with copper receive an INCREMENTAL k boost from the 
-    surface trace, not a binary k=385 assignment. The baseline is always
-    k_eff (multilayer stackup), not raw k_fr4.
-    
-    FIX V-6: Uses standard pcb-tools API (ctx.render(camfile) + dump),
-    with post-hoc alignment via camfile.bounds. Falls back gracefully 
-    if the Gerber file cannot be parsed.
-    
-    FIX V-7: Temp file is cleaned up in a finally block.
-    """
-    import gerber
-    from gerber.render.cairo_backend import GerberCairoContext
-    from PIL import Image
-    import tempfile
-    import os
-
-    nx = int(width_mm / (dx_m * 1000))
-    ny = int(height_mm / (dx_m * 1000))
-
-    # FIX V-1/V-2: Baseline = effective stackup conductivity
-    k_eff_base = config.calculate_k_eff(
-        layers=config.BOARD_LAYERS,
-        copper_oz=config.COPPER_OZ,
-        substrate_k=config.K_FR4
+    # Используем Rasterized2DLayer для точной растеризации
+    layer = Rasterized2DLayer(
+        options=Rasterized2DLayerParams(
+            source_path=gerber_path,
+            colors=ColorScheme.COPPER_ALPHA, # Оставляем медь видимой
+        )
     )
-
-    try:
-        camfile = gerber.read(gerber_path)
-    except Exception as e:
-        print(f"Error parsing Gerber file: {e}")
-        return np.full((ny, nx), k_eff_base)
-
-    # FIX V-6: Use the standard pcb-tools rendering API.
-    # GerberCairoContext does NOT have set_bounds() or paint_background().
-    ctx = GerberCairoContext()
-    ctx.render(camfile)
-
-    tmp_path = None
-    try:
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
-            tmp_path = tmp_file.name
-
-        ctx.dump(tmp_path)
-
-        img = Image.open(tmp_path).convert('L')
-        # PIL.resize takes (width, height) = (nx, ny) — correct axis order
-        img = img.resize((nx, ny), Image.Resampling.LANCZOS)
-        img_data = np.array(img)
-
-        # Gerber origin is bottom-left, PIL image origin is top-left.
-        img_data = np.flipud(img_data)
-
-        # Any pixel significantly brighter than background is copper
-        copper_mask = img_data > 10
-
-        K_matrix = np.full((ny, nx), k_eff_base)
-
-        # FIX V-2: Instead of binary k=385, add the incremental
-        # contribution of ONE surface copper layer (e.g. 1 oz = 35 um).
-        cu_trace_thickness = config.COPPER_OZ * 0.000035  # [m]
-        k_trace_increment = (k_copper * cu_trace_thickness) / config.d
-        K_matrix[copper_mask] = k_eff_base + k_trace_increment
-
-    finally:
-        # FIX V-7: Guarantee temp file cleanup
-        if tmp_path and os.path.exists(tmp_path):
-            os.remove(tmp_path)
-
-    return K_matrix
+    # Сохраняем результат в формате PNG в BytesIO
+    layer.render().save(img_io, format="PNG")
+    img_io.seek(0)
+    
+    # Загружаем изображение через Pillow и конвертируем в градации серого (L)
+    img = Image.open(img_io).convert("L")
+    
+    # Меняем размер изображения точно под размеры расчетной сетки (nx, ny)
+    # Обязательно используем метод NEAREST (Ближайший сосед) для сохранения четких контуров
+    img = img.resize((nx, ny), Image.Resampling.NEAREST)
+    
+    # Конвертируем в NumPy массив. Формат PIL (ny, nx) совпадает с матрицей
+    img_array = np.array(img)
+    
+    # Переворачиваем Y ось, так как координаты Gerber идут снизу вверх, а у картинок - сверху вниз
+    img_array = np.flipud(img_array)
+    
+    # Создаем базовую матрицу, заполненную теплопроводностью текстолита
+    k_matrix = np.full((ny, nx), config.calculate_k_eff(), dtype=float)
+    
+    # Там, где на изображении есть медь (значение пикселя > 0), устанавливаем теплопроводность меди
+    k_matrix[img_array > 0] = config.K_CU
+    
+    return k_matrix

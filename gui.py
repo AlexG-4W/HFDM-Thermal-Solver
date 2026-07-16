@@ -105,6 +105,12 @@ class MainWindow(QMainWindow):
         self.solver_thread = None
         self.worker = None
 
+        # Virtual Probes state (up to 10)
+        self.u_final = None          # Last computed temperature matrix
+        self.probes = []             # List of (x_mm, y_mm) probe positions
+        self.probe_artists = []      # Matplotlib artists (marker + text) for cleanup
+        self.MAX_PROBES = 10
+
         self.init_ui()
         self.setup_logging()
 
@@ -141,6 +147,13 @@ class MainWindow(QMainWindow):
 
         self.lbl_status = QLabel("Status: No data loaded")
         data_layout.addWidget(self.lbl_status)
+        
+        self.btn_load_heatsinks = QPushButton("Load Heatsinks CSV")
+        self.btn_load_heatsinks.clicked.connect(self.load_heatsinks_csv)
+        data_layout.addWidget(self.btn_load_heatsinks)
+        
+        self.lbl_heatsinks_status = QLabel("Heatsinks: None")
+        data_layout.addWidget(self.lbl_heatsinks_status)
         
         # Gerber Input
         self.btn_load_gerber = QPushButton("Load Top Copper (Gerber)")
@@ -244,7 +257,21 @@ class MainWindow(QMainWindow):
         
         self.ax = self.figure.add_subplot(111)
         self.im = None
-        
+
+        # Connect mouse click on canvas for interactive probes
+        self.canvas.mpl_connect('button_press_event', self.on_canvas_click)
+
+        # Probe & Export toolbar under the canvas
+        toolbar_layout = QHBoxLayout()
+        self.btn_clear_probes = QPushButton("Clear Probes")
+        self.btn_clear_probes.clicked.connect(self.clear_probes)
+        toolbar_layout.addWidget(self.btn_clear_probes)
+
+        self.btn_save_image = QPushButton("Save Result Image")
+        self.btn_save_image.clicked.connect(self.save_result_image)
+        toolbar_layout.addWidget(self.btn_save_image)
+        right_layout.addLayout(toolbar_layout)
+
         splitter.addWidget(right_panel)
         
         main_layout.addWidget(splitter)
@@ -286,6 +313,31 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.log(f"Load Error: {str(e)}")
 
+    def load_heatsinks_csv(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open Heatsinks CSV", "", "CSV Files (*.csv);;All Files (*)"
+        )
+        if not path:
+            return
+
+        try:
+            from data_loader import load_heatsinks
+            
+            # Use existing grid dimensions
+            self.H = load_heatsinks(path, nx=self.nx, ny=self.ny)
+            
+            # Count rows to display the status properly
+            import csv
+            with open(path, mode='r') as file:
+                reader = csv.DictReader(file)
+                count = sum(1 for row in reader)
+            
+            self.lbl_heatsinks_status.setText(f"Heatsinks: {count} loaded")
+            self.log(f"Successfully loaded {count} heatsinks.")
+            
+        except Exception as e:
+            self.log(f"Heatsinks Load Error: {str(e)}")
+
     def load_gerber(self):
         path, _ = QFileDialog.getOpenFileName(self, "Load Top Copper Gerber", "", "Gerber Files (*.gbr *.gtl);;All Files (*)")
         if path:
@@ -296,7 +348,9 @@ class MainWindow(QMainWindow):
                 QApplication.processEvents()
                 
                 # Assume 100x100 board
-                self.K_matrix = load_gerber_to_k_matrix(path, 100.0, 100.0, config.dx, config.K_FR4, config.K_CU)
+                nx = int(100.0 / (config.dx * 1000))
+                ny = int(100.0 / (config.dx * 1000))
+                self.K_matrix = load_gerber_to_k_matrix(path, nx, ny, config.dx, config.dx)
                 filename = os.path.basename(path)
                 self.lbl_gerber_status.setText(f"Gerber: {filename}")
                 self.btn_view_topo.setEnabled(True)
@@ -463,8 +517,118 @@ class MainWindow(QMainWindow):
         self.btn_stop.setEnabled(False)
         
         if u_final is not None:
+            self.u_final = u_final
+            self.clear_probes()  # Clear stale probes from previous run
             self.update_plots(u_final, self.spin_tfinal.value(), np.max(u_final))
             self.log("Simulation Result Rendered.")
+
+    # ----- Interactive Virtual Probes -----
+
+    def on_canvas_click(self, event):
+        """
+        Handles mouse clicks on the Matplotlib canvas.
+        Left-click: place a virtual probe (max 10).
+        Right-click: remove the nearest probe.
+        """
+        # Ignore clicks outside the axes or when no result is available
+        if event.inaxes != self.ax or self.u_final is None:
+            return
+
+        x_mm, y_mm = event.xdata, event.ydata
+        if x_mm is None or y_mm is None:
+            return
+
+        if event.button == 1:  # Left click -> place probe
+            if len(self.probes) >= self.MAX_PROBES:
+                self.log(f"Max probes ({self.MAX_PROBES}) reached. Right-click to remove or Clear Probes.")
+                return
+            self._place_probe(x_mm, y_mm)
+
+        elif event.button == 3:  # Right click -> remove nearest probe
+            self._remove_nearest_probe(x_mm, y_mm)
+
+    def _place_probe(self, x_mm, y_mm):
+        """Places a probe marker + temperature annotation at (x_mm, y_mm)."""
+        u = self.u_final
+        ny, nx = u.shape
+        dx_mm = config.dx * 1000
+
+        # Convert physical coords to grid indices
+        ix = int(round(x_mm / dx_mm))
+        iy = int(round(y_mm / dx_mm))
+        ix = max(0, min(nx - 1, ix))
+        iy = max(0, min(ny - 1, iy))
+
+        temperature = u[iy, ix]
+
+        # Draw marker and label
+        marker, = self.ax.plot(
+            x_mm, y_mm, 'x', color='cyan', markersize=10,
+            markeredgewidth=2, zorder=10
+        )
+        label = self.ax.annotate(
+            f"{temperature:.1f} \u00b0C",
+            xy=(x_mm, y_mm),
+            xytext=(8, 8), textcoords='offset points',
+            fontsize=9, fontweight='bold',
+            color='white',
+            bbox=dict(boxstyle='round,pad=0.3', fc='black', alpha=0.7),
+            zorder=11
+        )
+
+        self.probes.append((x_mm, y_mm))
+        self.probe_artists.append((marker, label))
+        self.canvas.draw()
+
+        probe_num = len(self.probes)
+        self.log(f"Probe #{probe_num}: ({x_mm:.1f}, {y_mm:.1f}) mm = {temperature:.1f} \u00b0C")
+
+    def _remove_nearest_probe(self, x_mm, y_mm):
+        """Removes the probe closest to the click position."""
+        if not self.probes:
+            return
+
+        # Find nearest probe
+        dists = [(px - x_mm)**2 + (py - y_mm)**2 for px, py in self.probes]
+        idx = int(np.argmin(dists))
+
+        # Remove artists from plot
+        marker, label = self.probe_artists[idx]
+        try:
+            marker.remove()
+            label.remove()
+        except (ValueError, NotImplementedError):
+            pass
+
+        removed = self.probes.pop(idx)
+        self.probe_artists.pop(idx)
+        self.canvas.draw()
+        self.log(f"Removed probe at ({removed[0]:.1f}, {removed[1]:.1f}) mm.")
+
+    def clear_probes(self):
+        """Removes all probe markers from the canvas."""
+        for marker, label in self.probe_artists:
+            try:
+                marker.remove()
+                label.remove()
+            except (ValueError, NotImplementedError):
+                pass  # Artist already removed or detached after fig.clear()
+        self.probes.clear()
+        self.probe_artists.clear()
+        self.canvas.draw()
+
+    # ----- Save Result Image -----
+
+    def save_result_image(self):
+        """Saves the current figure (with probes) to a PNG/JPEG file."""
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Result Image", "",
+            "PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"
+        )
+        if not path:
+            return
+        self.figure.savefig(path, dpi=200, bbox_inches='tight')
+        self.log(f"Result image saved to: {path}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

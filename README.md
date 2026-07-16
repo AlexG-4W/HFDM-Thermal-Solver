@@ -1,82 +1,55 @@
-# HFDM Thermal Solver v1.1
+# HFDM Thermal Solver ![Version](https://img.shields.io/badge/version-v1.2-blue)
 
-![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
-![Status](https://img.shields.io/badge/status-Stable-brightgreen.svg)
+A 2D Finite Difference Method (FDM) thermal simulator for Printed Circuit Boards (PCBs). This tool allows engineers to evaluate heat dissipation, test component placement, and analyze thermal conductivity using realistic board parameters and Gerber top copper layers.
 
-**HFDM (Heterogeneous Finite Difference Method) Thermal Solver** is a high-performance 2D computational heat transfer simulation tool specifically designed for Printed Circuit Boards (PCBs). 
+## Features
 
-Unlike standard FDM solvers that assume uniform material properties, HFDM v1.1 parses actual manufacturing Gerber files (RS-274X) to build a heterogeneous thermal conductivity matrix, accurately simulating the thermodynamic behavior at the interfaces between FR-4 substrate and copper traces.
+- **Gerber Top Copper Parsing:** Accurately calculates thermal conductivity (K-matrix) based on traces, pads, and polygons using the modern **PyGerber** library (supports X2/X3 formats, precise rasterization).
+- **Independent Data Input:** Seamlessly load Heat Sources (components) and Convection Zones (heatsinks) independently via CSV.
+- **Steady-State & Transient Analysis:** Run both equilibrium thermal simulations and time-dependent temperature evolution.
+- **Interactive Virtual Probes:** Left-click anywhere on the generated heatmap to place up to 10 virtual temperature probes. Right-click to clear them.
+- **High-Quality Export:** Save the final thermal simulation results (heatmap + probes) directly to a PNG image for reporting.
+- **Clean Executable Builds:** The build pipeline is optimized and free of legacy dependencies.
 
----
+## Installation & Dependencies
 
-## Key Features
+Requires Python 3.9+
 
-* **Direct Gerber Parsing (RS-274X):** Automates the extraction of top-layer copper topology using pcb-tools, mapping it directly into the spatial thermal conductivity matrix K(x,y).
-* **Heterogeneous Interface Physics:** Implements Harmonic Mean Averaging on staggered grids. This strictly enforces the conservation of energy and prevents non-physical heat diffusion at the sharp boundaries between high-conductivity copper (385 W/mK) and low-conductivity FR-4 (0.3 W/mK).
-* **Strict CFL Stability:** The Transient solver automatically calculates a dynamic time step (dt) based on the Courant-Friedrichs-Lewy condition, utilizing the maximum thermal diffusivity (alpha_max) and convective heat sinks to guarantee absolute mathematical stability (zero numerical explosions).
-* **Zero For-Loops (100% Vectorized):** The mathematical core relies entirely on NumPy array slicing. Convective boundary conditions are implemented via the Ghost Node method, preserving O(dx^2) spatial accuracy without iterative bottlenecks.
-* **Multithreaded PyQt6 GUI:** A robust desktop interface that isolates the intensive FDM calculations into background QRunnable threads, preventing UI freezing while utilizing pyqtSignal for safe memory management and Matplotlib rendering.
+Install the required dependencies via `pip`:
 
----
-
-
-<img width="2545" height="1376" alt="scr1" src="https://github.com/user-attachments/assets/7e7fe15d-90be-4f16-97f5-fe19bc6feccc" />
-
-<img width="2559" height="1394" alt="scr2" src="https://github.com/user-attachments/assets/cc3e082d-5ec8-4afd-a6a6-91592efae555" />
-
-
-
-
-
-## Mathematical Foundation
-
-The core solver is built upon the divergent form of the 2D Heat Equation, accounting for spatially varying thermal conductivity K(x,y), volumetric heat generation Q(x,y), and convective cooling h:
-
-$$ \rho c_p \frac{\partial u}{\partial t} = \nabla \cdot (K(x,y) \nabla u) + Q(x,y) - \frac{2h(u - T_{amb})}{d} $$
-
-To accurately calculate the heat flux between two adjacent cells (e.g., node $i$ and $i+1$) with vastly different materials, the solver computes the effective interface conductivity using the harmonic mean:
-
-$$ K_{interface} = \frac{2 K_i K_{i+1}}{K_i + K_{i+1}} $$
-
----
-
-## Project Architecture
-
-* `solver.py` — The mathematical engine. Contains the highly vectorized `solve_steady_state` (Jacobi iteration) and `solve_transient` (Explicit Euler) algorithms.
-* `data_loader.py` — Handles the parsing of CSV power profiles, Heatsink definitions, and rasterizes Gerber files to build the baseline `k_eff` matrix.
-* `visualization.py` — Matplotlib integration for rendering real-time thermal maps and hardware topology.
-* `gui.py` — The PyQt6 user interface, signal routing, and application state management.
-* `config.py` — Global physical constants, spatial resolution (`dx`), and PCB stackup parameters.
-
----
-
-## Installation & Usage
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/AlexG-4W/HFDM-Thermal-Solver
-cd HFDM-Thermal-Solver
+pip install numpy matplotlib PyQt6 Pillow pygerber
 ```
+*(Note: As of v1.2, the deprecated `pcb-tools` and `pycairo` libraries have been entirely removed and are no longer required).*
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-*(Required packages: `numpy`, `matplotlib`, `PyQt6`, `pcb-tools`, `pycairo`)*
+## Usage Workflow
 
-3. Run the application:
-```bash
-python main.py
-```
+The UI is built with PyQt6 and follows a straightforward workflow:
 
-### Running a Test Simulation
-Check the `/examples` folder for sample files. 
-1. Load `bga_components.csv` to import the heat sources.
-2. Load `bga_heatsinks.csv` to apply custom convective zones.
-3. Load `bga_top_copper.gbr` to generate the correct thermal pathways.
-4. Click **Run Steady-State** to visualize the thermal equilibrium.
+1. **Load Components CSV:** Load the power-dissipating components (Heat sources).
+2. **Load Heatsinks CSV:** Load the local cooling zones (Convective heat transfer).
+3. **Load Top Copper (Gerber):** Select a `.gbr` file to map copper traces and pads into the thermal conductivity matrix.
+4. **Run Simulation:** Adjust ambient temperature (`T_amb`) and time (`t_final`), then click **Run Steady-State** or **Run Transient**.
+5. **Probe & Save:** 
+   - *Left-click* on the heatmap to place virtual temperature probes.
+   - *Right-click* to clear them.
+   - Use the UI save functionality to export the visualization to a PNG file.
 
----
+## CSV Format Guide
 
-## License
-Distributed under the GNU General Public License v3.0
+Both components and heatsinks are imported via CSV files. **Important:** As of v1.2, the terminology has been updated to use `Length_mm` instead of `Height_mm` to avoid confusion with the physical 3D Z-axis in a 2D simulation.
+
+### Components CSV (`components_power.csv`)
+Defines the heat-generating parts on the PCB.
+
+| Designator | Center_X_mm | Center_Y_mm | Width_mm | Length_mm | Power_Watts |
+|------------|-------------|-------------|----------|-----------|-------------|
+| U1_BGA     | 50.0        | 50.0        | 35.0     | 35.0      | 8.0         |
+| U2_DDR     | 75.0        | 70.0        | 12.0     | 8.0       | 1.5         |
+
+### Heatsinks CSV (`heatsinks.csv`)
+Defines areas with enhanced convective cooling.
+
+| Designator | Center_X_mm | Center_Y_mm | Width_mm | Length_mm | Convection_H |
+|------------|-------------|-------------|----------|-----------|--------------|
+| HS1_BGA    | 50.0        | 50.0        | 40.0     | 40.0      | 120.0        |
