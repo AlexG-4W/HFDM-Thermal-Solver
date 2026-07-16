@@ -19,7 +19,15 @@ A 2D Finite Difference Method (FDM) thermal simulator for Printed Circuit Boards
 <img width="2551" height="1387" alt="scr22" src="https://github.com/user-attachments/assets/a73b86eb-a55f-475b-80bb-3702203f05c4" />
 
 
+## Mathematical Foundation
 
+The core solver is built upon the divergent form of the 2D Heat Equation, accounting for spatially varying thermal conductivity K(x,y), volumetric heat generation Q(x,y), and convective cooling h:
+
+$$ \rho c_p \frac{\partial u}{\partial t} = \nabla \cdot (K(x,y) \nabla u) + Q(x,y) - \frac{2h(u - T_{amb})}{d} $$
+
+To accurately calculate the heat flux between two adjacent cells (e.g., node $i$ and $i+1$) with vastly different materials, the solver computes the effective interface conductivity using the harmonic mean:
+
+$$ K_{interface} = \frac{2 K_i K_{i+1}}{K_i + K_{i+1}} $$
 
 
 
@@ -65,3 +73,6 @@ Defines areas with enhanced convective cooling.
 | Designator | Center_X_mm | Center_Y_mm | Width_mm | Length_mm | Convection_H |
 |------------|-------------|-------------|----------|-----------|--------------|
 | HS1_BGA    | 50.0        | 50.0        | 40.0     | 40.0      | 120.0        |
+
+## License
+Distributed under the GNU General Public License v3.0
