@@ -11,6 +11,18 @@ A 2D Finite Difference Method (FDM) thermal simulator for Printed Circuit Boards
 - **High-Quality Export:** Save the final thermal simulation results (heatmap + probes) directly to a PNG image for reporting.
 - **Clean Executable Builds:** The build pipeline is optimized and free of legacy dependencies.
 
+
+<img width="2545" height="1391" alt="scr11" src="https://github.com/user-attachments/assets/8ba90b6a-2f2f-4a94-9f6f-5557e183f6be" />
+
+
+
+<img width="2551" height="1387" alt="scr22" src="https://github.com/user-attachments/assets/a73b86eb-a55f-475b-80bb-3702203f05c4" />
+
+
+
+
+
+
 ## Installation & Dependencies
 
 Requires Python 3.9+
