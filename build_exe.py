@@ -1,10 +1,12 @@
 import PyInstaller.__main__
 import os
 
+import config
+
 # Формируем аргументы для PyInstaller (используем ';' как разделитель для Windows)
 args = [
     'main.py',
-    '--name=HFDM_Solver_v1.1',
+    f'--name=HFDM_Solver_v{config.VERSION}',
     '--onefile',
     '--windowed',
     '--clean',

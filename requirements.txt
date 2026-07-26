@@ -1,6 +1,13 @@
 numpy>=1.20.0
-matplotlib>=3.3.0
+# 3.8 is the real floor: ContourSet became an Artist there, and the heatsink
+# layer relies on remove()/set_visible() on it. matplotlib.colormaps needs 3.5.
+matplotlib>=3.8.0
 PyQt6>=6.0.0
-pygerber
-Pillow>=9.0.0
+# Pinned to the 2.x line: load_gerber_to_k_matrix uses
+# pygerber.gerberx3.api (Rasterized2DLayer, LayerProperties.gerber_bounding_box),
+# which is 2.x-only. 2.4.3 is the current release.
+pygerber>=2.4,<3
+# 9.1 introduced Image.Resampling, which the BOX resample in the Gerber
+# loader depends on.
+Pillow>=9.1.0
 pytest>=7.0.0

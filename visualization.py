@@ -1,5 +1,18 @@
+"""
+Standalone plotting helpers.
+
+Deliberately Qt-free: tests import this module without a QApplication.
+
+plot_heatmap()/update_heatmap() used to live here. They were the last callers
+of fig.clear() - plot_heatmap created a colorbar on every call, so the only way
+to stop colorbars accumulating was to tear the figure down, which also
+destroyed the AxesImage, the axes reference and every probe artist. The board
+canvas now keeps its artists alive and retargets a single colorbar; see
+board_view.BoardView. Nothing imported these two any more, so they are gone
+rather than left as a second, broken way to draw the same thing.
+"""
+
 import matplotlib.pyplot as plt
-import numpy as np
 
 def plot_probe_history(time_array, probe_data, fig=None, ax=None, show=True):
     """
@@ -29,30 +42,3 @@ def plot_probe_history(time_array, probe_data, fig=None, ax=None, show=True):
         plt.savefig("probe_history.png")
         plt.show()
 
-def plot_heatmap(u_matrix, nx_mm=100.0, ny_mm=100.0, fig=None, ax=None, title="PCB Thermal Distribution", clear_fig=False):
-    """
-    Plots the temperature distribution on the PCB.
-    nx_mm, ny_mm: Physical dimensions for the plot axes.
-    """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=(8, 6))
-    
-    if clear_fig:
-        fig.clear()
-        ax = fig.add_subplot(111)
-    
-    im = ax.imshow(u_matrix, cmap='inferno', origin='lower', extent=[0, nx_mm, 0, ny_mm])
-    fig.colorbar(im, ax=ax, label='Temperature [°C]')
-    ax.set_title(title)
-    ax.set_xlabel('X [mm]')
-    ax.set_ylabel('Y [mm]')
-    
-    return im
-
-def update_heatmap(im, u_matrix, ax, title):
-    """
-    Updates an existing heatmap image.
-    """
-    im.set_array(u_matrix)
-    im.set_clim(vmin=np.min(u_matrix), vmax=np.max(u_matrix))
-    ax.set_title(title)
