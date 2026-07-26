@@ -34,6 +34,14 @@ copper/FR-4 stackup and leaves through both faces by convection and radiation.
   that hits the iteration cap says so instead of presenting a partial answer as
   a result.
 
+
+<img width="2559" height="1390" alt="scr2" src="https://github.com/user-attachments/assets/062a58de-0f43-41cd-a1a3-65e92da1ecd1" />
+<img width="2556" height="1397" alt="scr1" src="https://github.com/user-attachments/assets/ae77abc2-f708-4e45-9551-9f4b5ea77676" />
+
+
+
+  
+
 ### Gerber import
 
 - **X2/X3 via PyGerber**, millimetre and inch sources alike.
