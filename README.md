@@ -35,8 +35,15 @@ copper/FR-4 stackup and leaves through both faces by convection and radiation.
   a result.
 
 
-<img width="2559" height="1390" alt="scr2" src="https://github.com/user-attachments/assets/062a58de-0f43-41cd-a1a3-65e92da1ecd1" />
-<img width="2556" height="1397" alt="scr1" src="https://github.com/user-attachments/assets/ae77abc2-f708-4e45-9551-9f4b5ea77676" />
+<img width="1600" height="950" alt="1" src="https://github.com/user-attachments/assets/4f96c61b-3718-462d-820c-c025c651f08a" />
+
+
+<img width="1600" height="950" alt="2" src="https://github.com/user-attachments/assets/330da65d-7ae6-488c-b0b8-ee5423ed2b9d" />
+
+
+<img width="1600" height="950" alt="3" src="https://github.com/user-attachments/assets/73f8541d-6e7e-4bc6-a61e-c90e9765b6ef" />
+
+
 
 
 
