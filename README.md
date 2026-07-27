@@ -213,3 +213,6 @@ per-component power budget move the answer far more than the mesh does.
 
 ---
 
+## License
+Distributed under the GNU General Public License v3.0
+
